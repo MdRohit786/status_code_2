@@ -1,155 +1,160 @@
-import { createContext, useReducer, useEffect } from 'react';
+// src/state/AuthContext.js
+import React, { createContext, useReducer, useEffect } from "react";
+import axios from "axios";
 
 export const AuthContext = createContext();
 
 const initialState = {
   user: null,
-  isAuthenticated: false,
-  isLoading: true
+  token: null,
+  error: null,
+  loading: true,
 };
 
-const authReducer = (state, action) => {
+function authReducer(state, action) {
   switch (action.type) {
-    case 'LOGIN_SUCCESS':
+    case "LOGIN_SUCCESS":
+    case "REGISTER_SUCCESS":
       return {
         ...state,
-        user: action.payload,
-        isAuthenticated: true,
-        isLoading: false
+        user: action.payload.user,
+        token: action.payload.token,
+        error: null,
+        loading: false,
       };
-    case 'LOGOUT':
+    case "LOGIN_FAILURE":
+    case "REGISTER_FAILURE":
       return {
         ...state,
         user: null,
-        isAuthenticated: false,
-        isLoading: false
+        token: null,
+        error: action.payload,
+        loading: false,
       };
-    case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload
-      };
-    case 'UPDATE_PROFILE':
-      return {
-        ...state,
-        user: { ...state.user, ...action.payload }
-      };
+    case "LOGOUT":
+      return { user: null, token: null, error: null, loading: false };
+    case "RESTORE":
+      return { ...state, ...action.payload, loading: false };
     default:
       return state;
   }
-};
+}
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // Restore auth state on refresh
   useEffect(() => {
-    // Check for stored auth data on app load
-    const storedUser = localStorage.getItem('ecodelivery_user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
-      } catch {
-        localStorage.removeItem('ecodelivery_user');
-        dispatch({ type: 'SET_LOADING', payload: false });
-      }
+    const token = localStorage.getItem("authToken");
+    const userData = localStorage.getItem("userData");
+    const vendorData = localStorage.getItem("vendorData");
+
+    if (token && (userData || vendorData)) {
+      dispatch({
+        type: "RESTORE",
+        payload: {
+          token,
+          user: JSON.parse(userData || vendorData),
+        },
+      });
     } else {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: "RESTORE", payload: {} });
     }
   }, []);
 
-  const login = async (email, password) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    
+  // Login
+  const login = async (email, password, isVendor = false) => {
     try {
-      // Mock login - in real app, call your API
-      const mockUsers = JSON.parse(localStorage.getItem('ecodelivery_registered_users') || '[]');
-      const user = mockUsers.find(u => u.email === email && u.password === password);
-      
-      if (!user) {
-        throw new Error('Invalid email or password');
+      const endpoint = isVendor
+        ? "http://127.0.0.1:8000/api/vendor/login/"
+        : "http://127.0.0.1:8000/api/user/login/";
+
+      const res = await axios.post(endpoint, { email, password });
+
+      const data = res.data;
+      const token = data.token || data.access;
+
+      localStorage.setItem("authToken", token);
+
+      if (isVendor) {
+        localStorage.setItem("vendorData", JSON.stringify(data.user || data));
+      } else {
+        localStorage.setItem("userData", JSON.stringify(data.user || data));
       }
 
-      const userData = { ...user };
-      delete userData.password; // Don't store password in context
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: { user: data.user || data, token },
+      });
 
-      localStorage.setItem('ecodelivery_user', JSON.stringify(userData));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: userData });
-      
-      return userData;
+      return true;
     } catch (error) {
-      dispatch({ type: 'SET_LOADING', payload: false });
-      throw error;
+      const msg =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Login failed";
+      dispatch({ type: "LOGIN_FAILURE", payload: msg });
+      return false;
     }
   };
 
-  const register = async (userData) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    
+  // Register
+  const register = async (body, role = "user") => {
     try {
-      // Mock registration - in real app, call your API
-      const mockUsers = JSON.parse(localStorage.getItem('ecodelivery_registered_users') || '[]');
-      
-      // Check if user already exists
-      if (mockUsers.find(u => u.email === userData.email)) {
-        throw new Error('Email already registered');
+      const endpoint =
+        role === "vendor"
+          ? "http://127.0.0.1:8000/api/vendor/register/"
+          : "http://127.0.0.1:8000/api/user/register/";
+
+      const res = await axios.post(endpoint, body);
+      const data = res.data;
+      const token = data.token || data.access;
+
+      localStorage.setItem("authToken", token);
+
+      if (role === "vendor") {
+        localStorage.setItem("vendorData", JSON.stringify(data.user || data));
+      } else {
+        localStorage.setItem("userData", JSON.stringify(data.user || data));
       }
 
-      const newUser = {
-        id: Date.now().toString(),
-        ...userData,
-        createdAt: new Date().toISOString(),
-        isVerified: true // Mock verification
-      };
+      dispatch({
+        type: "REGISTER_SUCCESS",
+        payload: { user: data.user || data, token },
+      });
 
-      mockUsers.push(newUser);
-      localStorage.setItem('ecodelivery_registered_users', JSON.stringify(mockUsers));
-
-      const userDataForContext = { ...newUser };
-      delete userDataForContext.password;
-
-      localStorage.setItem('ecodelivery_user', JSON.stringify(userDataForContext));
-      dispatch({ type: 'LOGIN_SUCCESS', payload: userDataForContext });
-      
-      return userDataForContext;
+      return true;
     } catch (error) {
-      dispatch({ type: 'SET_LOADING', payload: false });
-      throw error;
+      const msg =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        "Registration failed";
+      dispatch({ type: "REGISTER_FAILURE", payload: msg });
+      return false;
     }
   };
 
+  // Logout
   const logout = () => {
-    localStorage.removeItem('ecodelivery_user');
-    dispatch({ type: 'LOGOUT' });
-  };
-
-  const updateProfile = (updates) => {
-    const updatedUser = { ...state.user, ...updates };
-    localStorage.setItem('ecodelivery_user', JSON.stringify(updatedUser));
-    dispatch({ type: 'UPDATE_PROFILE', payload: updates });
-    
-    // Also update in registered users
-    const mockUsers = JSON.parse(localStorage.getItem('ecodelivery_registered_users') || '[]');
-    const userIndex = mockUsers.findIndex(u => u.id === state.user.id);
-    if (userIndex !== -1) {
-      mockUsers[userIndex] = { ...mockUsers[userIndex], ...updates };
-      localStorage.setItem('ecodelivery_registered_users', JSON.stringify(mockUsers));
-    }
-  };
-
-  const value = {
-    user: state.user,
-    isAuthenticated: state.isAuthenticated,
-    isLoading: state.isLoading,
-    login,
-    register,
-    logout,
-    updateProfile
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
+    localStorage.removeItem("vendorData");
+    dispatch({ type: "LOGOUT" });
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user: state.user,
+        token: state.token,
+        error: state.error,
+        loading: state.loading,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
+};

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, MapPin, Store, Truck } from 'lucide-react';
 
@@ -23,10 +23,24 @@ export default function AuthPage() {
   // Mock geolocation since we don't have the hook
   const position = { latitude: 0, longitude: 0 };
 
-  if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+useEffect(() => {
+  const token = localStorage.getItem('authToken');
+  const userData = localStorage.getItem('userData');
+  const vendorData = localStorage.getItem('vendorData');
+  
+  if (token && (userData || vendorData)) {
+    setIsAuthenticated(true);
   }
+}, []);
 
+if (isAuthenticated) {
+  // Check role and redirect accordingly
+  const vendorData = localStorage.getItem('vendorData');
+  if (vendorData) {
+    return <Navigate to="/vendor" replace />;
+  }
+  return <Navigate to="/customer" replace />;
+}
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -34,10 +48,12 @@ export default function AuthPage() {
 
     try {
       let endpoint, body;
+      const position = { latitude: 0, longitude: 0 }; // Mock position
 
       if (mode === 'login') {
         // Login API call
-        endpoint = formData.email.includes('vendor') ? 
+        const isVendor = formData.email.includes('vendor') || mode.includes('vendor');
+        endpoint = isVendor ? 
           'http://127.0.0.1:8000/api/vendor/login/' : 
           'http://127.0.0.1:8000/api/user/login/';
         
@@ -46,7 +62,7 @@ export default function AuthPage() {
           password: formData.password
         };
       } else if (mode === 'register-customer') {
-        // Customer registration API call
+
         endpoint = 'http://127.0.0.1:8000/api/user/register/';
         body = {
           username: formData.name,
@@ -58,7 +74,7 @@ export default function AuthPage() {
           longitude: position.longitude
         };
       } else if (mode === 'register-vendor') {
-        // Vendor registration API call
+
         endpoint = 'http://127.0.0.1:8000/api/vendor/register/';
         body = {
           name: formData.name,
@@ -93,10 +109,21 @@ export default function AuthPage() {
         }
       }
 
-      // Success - store token and user data
+      // Success - store token and user/vendor data based on role
       if (data.token || data.access) {
-        localStorage.setItem('authToken', data.token || data.access);
-        localStorage.setItem('userData', JSON.stringify(data.user || data));
+        const token = data.token || data.access;
+        localStorage.setItem('authToken', token);
+        
+        // Determine if this is a vendor or user
+        const isVendorRole = mode === 'register-vendor' || 
+                            endpoint.includes('vendor');
+        
+        if (isVendorRole) {
+          localStorage.setItem('vendorData', JSON.stringify(data.user || data));
+        } else {
+          localStorage.setItem('userData', JSON.stringify(data.user || data));
+        }
+        
         setIsAuthenticated(true);
       }
 
