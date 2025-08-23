@@ -61,8 +61,8 @@ export function AuthProvider({ children }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    const userData = localStorage.getItem('user_data');
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userToken');
     
     if (token && userData) {
       try {
@@ -73,8 +73,8 @@ export function AuthProvider({ children }) {
         });
       } catch (error) {
         console.error('Invalid stored user data:', error);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userToken');
       }
     }
     
@@ -103,8 +103,8 @@ export function AuthProvider({ children }) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Store in localStorage
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('user_data', JSON.stringify(mockUser));
+      localStorage.setItem('authToken', mockToken);
+      localStorage.setItem('userToken', JSON.stringify(mockUser));
       
       dispatch({
         type: 'LOGIN_SUCCESS',
@@ -152,8 +152,8 @@ export function AuthProvider({ children }) {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Store in localStorage
-      localStorage.setItem('auth_token', mockToken);
-      localStorage.setItem('user_data', JSON.stringify(newUser));
+      localStorage.setItem('authToken', mockToken);
+      localStorage.setItem('userToken', JSON.stringify(newUser));
       
       dispatch({
         type: 'REGISTER_SUCCESS',
@@ -171,15 +171,15 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_data');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userToken');
     dispatch({ type: 'LOGOUT' });
   };
 
   const updateProfile = async (updates) => {
     try {
       const updatedUser = { ...state.user, ...updates };
-      localStorage.setItem('user_data', JSON.stringify(updatedUser));
+      localStorage.setItem('userToken', JSON.stringify(updatedUser));
       
       dispatch({
         type: 'LOGIN_SUCCESS',
