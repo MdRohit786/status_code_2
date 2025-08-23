@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Map, Camera, Bell, TrendingUp, Store, ShoppingCart, Route, Leaf } from "lucide-react";
+import { Map, Camera, Bell, TrendingUp, Store, ShoppingCart, Route, Leaf, Package, UserCheck } from "lucide-react";
 import useAuth from "../hooks/useAuth";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -51,6 +51,13 @@ export default function Home() {
     }
   ];
 
+  // const points = [
+  //   "Ordinary e-commerce platforms charge a delivery fee — with us, you pay **zero delivery charges**.",
+  //   "Other delivery partners waste fuel due to unknown local routes — with us, it’s **0% carbon emission**.",
+  //   "Ordinary platforms restrict product quantities — with us, you get exactly what you need (or even more if you change your mind).",
+  //   "Vendors and locals understand their **true demand** with our platform.",
+  // ];
+
   const marketplaceStats = [
     { label: "Active Vendors", value: "150+", icon: Store },
     { label: "Daily Orders", value: "500+", icon: ShoppingCart },
@@ -82,9 +89,14 @@ export default function Home() {
             </div>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-4xl mx-auto">
-            The <span className="font-semibold text-green-600">eco-friendly delivery platform</span> connecting{" "}
-            <span className="font-semibold text-blue-600">local vendors</span> with customers. 
-            AI-powered route optimization, real-time order tracking, and sustainable delivery methods.
+            The{" "}
+            <span className="font-semibold text-green-600">
+              eco-friendly delivery platform
+            </span>{" "}
+            connecting{" "}
+            <span className="font-semibold text-blue-600">local vendors</span>{" "}
+            with customers. AI-powered route optimization, real-time order
+            tracking, and sustainable delivery methods.
           </p>
 
           {/* CTA Buttons */}
@@ -109,10 +121,14 @@ export default function Home() {
             ) : (
               <>
                 <Link
-                  to={user?.role === 'vendor' ? '/vendor' : '/customer'}
+                  to={user?.role === "vendor" ? "/vendor" : "/customer"}
                   className="inline-flex items-center px-8 py-4 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 text-lg font-medium"
                 >
-                  {user?.role === 'vendor' ? <Store className="w-6 h-6 mr-2" /> : <ShoppingCart className="w-6 h-6 mr-2" />}
+                  {user?.role === "vendor" ? (
+                    <Store className="w-6 h-6 mr-2" />
+                  ) : (
+                    <ShoppingCart className="w-6 h-6 mr-2" />
+                  )}
                   Go to Dashboard
                 </Link>
                 <Link
@@ -131,19 +147,79 @@ export default function Home() {
             {marketplaceStats.map((stat, index) => {
               const Icon = stat.icon;
               return (
-                <div key={index} className="bg-white rounded-xl p-6 shadow-sm border">
+                <div
+                  key={index}
+                  className="bg-white rounded-xl p-6 shadow-sm border"
+                >
                   <div className="flex items-center justify-center mb-3">
                     <div className="p-3 bg-green-100 rounded-lg">
                       <Icon className="w-6 h-6 text-green-600" />
                     </div>
                   </div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</div>
+                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                    {stat.value}
+                  </div>
                   <div className="text-sm text-gray-600">{stat.label}</div>
                 </div>
               );
             })}
           </div>
         </div>
+        <section className="py-20 bg-gradient-to-b from-blue-50 to-white">
+          <div className="max-w-6xl mx-auto px-6 text-center">
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-6">
+              Why Choose <span className="text-blue-600">Us</span>?
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-14">
+              We’re not just another e-commerce platform — here’s what makes us
+              different
+            </p>
+
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  icon: ShoppingCart,
+                  text: "Ordinary e-commerce platforms charge a delivery fee — with us, you pay zero delivery charges.",
+                },
+                {
+                  icon: Leaf,
+                  text: "Other delivery partners waste fuel due to unknown routes — with us, it’s 0% carbon emission.",
+                },
+                {
+                  icon: TrendingUp,
+                  text: "Ordinary platforms restrict product quantities — with us, you get exactly what you need (or more if you change your mind).",
+                },
+                {
+                  icon: Store,
+                  text: "Vendors and locals understand their true demand with our platform.",
+                },
+                {
+                  icon: Package,
+                  text: "Existing quick commerce platforms bind up with their local warehouses — products can expire or get damaged. With us, you get fresh, on-the-go veggies, fruits, and grocery items.",
+                },
+                {
+                  icon: UserCheck,
+                  text: "Our platform is built to be genuinely user-friendly, empowering authentic vendors with simple tools, transparent processes, and fair opportunities.",
+                },
+              ].map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <div
+                    key={index}
+                    className="relative bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 group"
+                  >
+                    <div className="absolute -top-6 left-6 w-12 h-12 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-md group-hover:scale-110 transition">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <p className="mt-6 text-gray-700 text-lg leading-relaxed">
+                      {item.text}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
         {/* ... rest of your code stays same ... */}
       </div>
