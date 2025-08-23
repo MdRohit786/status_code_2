@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, MapPin, Store, Truck } from 'lucide-react';
-import useAuth from '../hooks/useAuth';
-import useGeolocation from '../hooks/useGeolocation';
 
 export default function AuthPage() {
   const [searchParams] = useSearchParams();
-  const mode = searchParams.get('mode') || 'login'; // 'login', 'register-customer', 'register-vendor'
-  const { login, register, loading, error, isAuthenticated } = useAuth();
-  const { position } = useGeolocation();
+  const mode = searchParams.get('mode') || 'login';
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -21,28 +20,90 @@ export default function AuthPage() {
     vehicleType: 'cycle'
   });
 
+  // Mock geolocation since we don't have the hook
+  const position = { latitude: 0, longitude: 0 };
+
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    const userData = {
-      ...formData,
-      location: position,
-      role: mode.includes('vendor') ? 'vendor' : 'customer'
-    };
+    setLoading(true);
+    setError(null);
 
-    let result;
-    if (mode === 'login') {
-      result = await login(userData);
-    } else {
-      result = await register(userData);
-    }
+    try {
+      let endpoint, body;
 
-    if (result.success) {
-      // Navigate will happen automatically due to isAuthenticated change
+      if (mode === 'login') {
+        // Login API call
+        endpoint = formData.email.includes('vendor') ? 
+          'http://127.0.0.1:8000/api/vendor/login/' : 
+          'http://127.0.0.1:8000/api/user/login/';
+        
+        body = {
+          email: formData.email,
+          password: formData.password
+        };
+      } else if (mode === 'register-customer') {
+        // Customer registration API call
+        endpoint = 'http://127.0.0.1:8000/api/user/register/';
+        body = {
+          username: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          address: formData.address,
+          latitude: position.latitude,
+          longitude: position.longitude
+        };
+      } else if (mode === 'register-vendor') {
+        // Vendor registration API call
+        endpoint = 'http://127.0.0.1:8000/api/vendor/register/';
+        body = {
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          address: formData.address,
+          latitude: position.latitude.toString(),
+          longitude: position.longitude.toString(),
+          business_name: formData.storeName,
+          category: formData.storeCategory
+        };
+      }
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle validation errors
+        if (typeof data === 'object') {
+          const errorMessages = Object.values(data).flat().join(', ');
+          throw new Error(errorMessages);
+        } else {
+          throw new Error(data.detail || 'An error occurred');
+        }
+      }
+
+      // Success - store token and user data
+      if (data.token || data.access) {
+        localStorage.setItem('authToken', data.token || data.access);
+        localStorage.setItem('userData', JSON.stringify(data.user || data));
+        setIsAuthenticated(true);
+      }
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
