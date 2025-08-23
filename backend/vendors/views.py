@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class VendorNearestOrdersView(APIView):
+    @vendor_login_required
     def post(self, request):
         serializer = VendorLocationSerializer(data=request.data)
         if serializer.is_valid():
@@ -29,7 +30,7 @@ class VendorNearestOrdersView(APIView):
                         "spherical": True
                     }
                 },
-                {"$limit": 5}  # only return 5 nearest orders
+                {"$limit": 5}
             ]
 
             demands = list(demands_collection.aggregate(pipeline))
