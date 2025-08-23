@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 
 export default function useGeolocation(
-  defaultPos = { lat: 22.5726, lng: 88.3639 } // fallback: Kolkata
+  // defaultPos = { lat: 22.5726, lng: 88.3639 } // fallback: Kolkata
 ) {
-  const [position, setPosition] = useState(defaultPos);
+  const [position, setPosition] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
