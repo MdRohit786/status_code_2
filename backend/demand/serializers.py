@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from datetime import datetime
+from mongo_client import users_collection
+import re
 
 class DemandSerializer(serializers.Serializer):
     username = serializers.CharField(required=True, max_length=100)
@@ -47,3 +49,56 @@ class DemandSerializer(serializers.Serializer):
         }
         
         return demand_doc
+
+
+
+class UserRegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True, max_length=100, min_length=3)
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, min_length=6, write_only=True)
+    phone = serializers.CharField(required=True, max_length=15)
+    address = serializers.CharField(required=True, max_length=255)
+    latitude = serializers.FloatField(required=True)
+    longitude = serializers.FloatField(required=True)
+
+    def validate_username(self, value):
+        # Check if username already exists
+        from mongo_client import users_collection
+        if users_collection.find_one({"username": value.lower()}):
+            raise serializers.ValidationError("Username already taken")
+        return value.lower()
+
+    def validate_email(self, value):
+        # Check if email already exists
+        from mongo_client import users_collection
+        if users_collection.find_one({"email": value.lower()}):
+            raise serializers.ValidationError("Email already registered")
+        return value.lower()
+
+    def validate_phone(self, value):
+        # Basic phone validation
+        if not re.match(r'^\+?[0-9]{10,15}$', value):
+            raise serializers.ValidationError("Invalid phone number format")
+        
+        # Check if phone already exists
+        from mongo_client import users_collection
+        if users_collection.find_one({"phone": value}):
+            raise serializers.ValidationError("Phone number already registered")
+        
+        return value
+
+    def validate(self, data):
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        
+        if not (-90 <= latitude <= 90):
+            raise serializers.ValidationError("Latitude must be between -90 and 90")
+        
+        if not (-180 <= longitude <= 180):
+            raise serializers.ValidationError("Longitude must be between -180 and 180")
+        
+        return data
+
+class UserLoginSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
