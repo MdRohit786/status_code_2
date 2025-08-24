@@ -4,10 +4,11 @@ from mongo_client import users_collection
 import re
 
 class DemandSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True, max_length=100)
+    name = serializers.CharField(required=True, max_length=100)
     address = serializers.CharField(required=True, max_length=255)
     latitude = serializers.FloatField(required=True)
     longitude = serializers.FloatField(required=True)
+    mobile_no = serializers.IntegerField(required=True)
     text = serializers.CharField(required=False, allow_blank=True, default="")
     photo = serializers.ImageField(required=False, allow_null=True)
     tags = serializers.ListField(
@@ -36,7 +37,6 @@ class DemandSerializer(serializers.Serializer):
         
         # Create the complete document structure
         demand_doc = {
-            "username": validated_data["username"],
             "address": validated_data["address"],
             "location": {
                 "type": "Point",
@@ -53,20 +53,13 @@ class DemandSerializer(serializers.Serializer):
 
 
 class UserRegisterSerializer(serializers.Serializer):
-    username = serializers.CharField(required=True, max_length=100, min_length=3)
+    name = serializers.CharField(required=True, max_length=100, min_length=3)
     email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True, min_length=6, write_only=True)
     phone = serializers.CharField(required=True, max_length=15)
     address = serializers.CharField(required=True, max_length=255)
     latitude = serializers.FloatField(required=True)
     longitude = serializers.FloatField(required=True)
-
-    def validate_username(self, value):
-        # Check if username already exists
-        from mongo_client import users_collection
-        if users_collection.find_one({"username": value.lower()}):
-            raise serializers.ValidationError("Username already taken")
-        return value.lower()
 
     def validate_email(self, value):
         # Check if email already exists
