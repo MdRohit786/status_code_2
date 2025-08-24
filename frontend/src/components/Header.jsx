@@ -12,23 +12,23 @@ export default function Header() {
   const navigate = useNavigate();
 
   const publicNavigation = [
-    { name: 'Home', href: '/', icon: Home },
-    { name: 'Vendors Map', href: '/map', icon: Map },
+   
   ];
 
   const getAuthenticatedNavigation = () => {
-    if (!isAuthenticated) return publicNavigation;
-    
-    const baseNav = [...publicNavigation];
-    
-    if (role === 'vendor') {
-      baseNav.push({ name: 'Vendor Dashboard', href: '/vendor', icon: Store });
-    } else if (role === 'user') {
-      baseNav.push({ name: 'My Orders', href: '/customer', icon: ShoppingCart });
-    }
-    
-    return baseNav;
-  };
+  if (!isAuthenticated) return publicNavigation;
+
+  const baseNav = [...publicNavigation];
+
+  if (role === 'vendor') {
+    baseNav.push({ name: 'Vendor Dashboard', href: '/vendor', icon: Store });
+    baseNav.push({ name: 'History', href: '/vendor-history', icon: ShoppingCart }); // <-- Add this line
+  } else if (role === 'user') {
+    baseNav.push({ name: 'My Orders', href: '/customer', icon: ShoppingCart });
+  }
+
+  return baseNav;
+};
 
   const navigation = getAuthenticatedNavigation();
 

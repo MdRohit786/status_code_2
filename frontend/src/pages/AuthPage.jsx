@@ -20,7 +20,7 @@ export default function AuthPage() {
     vehicleType: 'cycle'
   });
 
-  const position = { latitude: 0, longitude: 0 };
+  // const position = { latitude: 0, longitude: 0 };
 
 useEffect(() => {
   const token = localStorage.getItem('authToken');
@@ -63,7 +63,7 @@ if (isAuthenticated) {
 
         endpoint = 'http://127.0.0.1:8000/api/user/register/';
         body = {
-          username: formData.name,
+          name: formData.name,
           email: formData.email,
           password: formData.password,
           phone: formData.phone,
@@ -148,7 +148,7 @@ if (isAuthenticated) {
             <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
               <Store className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">EcoMarket</span>
+            <span className="text-2xl font-bold text-gray-900">HaatBazar</span>
           </Link>
           
           <h2 className="text-3xl font-extrabold text-gray-900">
