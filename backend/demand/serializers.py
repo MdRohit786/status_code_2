@@ -40,6 +40,7 @@ class DemandSerializer(serializers.Serializer):
         demand_doc = {
             "name": validated_data["name"],
             "email": validated_data["email"],
+            "mobile_no": validated_data["mobile_no"],
             "address": validated_data["address"],
             "location": {
                 "type": "Point",
