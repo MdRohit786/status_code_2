@@ -27,7 +27,7 @@ export default function VendorHistory() {
       const data = await response.json();
       console.log("History Orders:", data);
 
-      const delivered = data.filter((order) => order.status === "delivered");
+      const delivered = data.filter((order) => order.status == "delivered");
       setOrders(delivered);
     } catch (error) {
       setError(error.message);
@@ -42,8 +42,8 @@ export default function VendorHistory() {
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
+        const lng = pos.coords.latitude;
+        const lat = pos.coords.longitude;
         setVendorLocation({ lat, lng });
       },
       () => {
@@ -97,7 +97,7 @@ useEffect(() => {
                 <tr key={order.id} className="text-center">
                   <td className="border p-2">{order.username || "N/A"}</td>
                   <td className="border p-2">{order.address}</td>
-                  <td className="border p-2">{order.phone}</td>
+                  <td className="border p-2">{order.mobile_no}</td>
                   <td className="border p-2">{order.text}</td>
                   <td className="border p-2 text-green-600 font-semibold">
                     {order.status}

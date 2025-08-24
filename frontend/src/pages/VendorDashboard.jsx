@@ -172,7 +172,7 @@ export default function VendorDashboard() {
                       )}
                     </div>
                   </td>
-                  <td className="border p-2">{order.phone}</td>
+                  <td className="border p-2">{order.mobile_no}</td>
                   <td className="border p-2">{order.text}</td>
                   <td className="border p-2">{order.status}</td>
                   <td className="border p-2 flex justify-center gap-2">
