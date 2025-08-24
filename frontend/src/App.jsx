@@ -10,6 +10,9 @@ import CustomerDashboard from "./pages/CustomerDashboard";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import FAB from "./components/FAB";
+import BuyerForm from './pages/BuyerForm'
+import VendorHistory from './pages/VendorHistory';
+
 
 function App() {
   return (
@@ -27,6 +30,8 @@ function App() {
                 <Route path="/customer" element={<CustomerDashboard />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="*" element={<NotFound />} />
+                <Route path="/buyer-form" element={<BuyerForm />} />
+                <Route path="/vendor-history" element={<VendorHistory />} />
               </Routes>
             </main>
 
