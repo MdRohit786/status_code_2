@@ -1,5 +1,5 @@
 import { createContext, useReducer } from 'react';
-import useAuth from '../hooks/useAuth';
+import useAuth from '../hooks/useAuth.js';
 
 export const OrderContext = createContext();
 

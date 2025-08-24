@@ -1,4 +1,4 @@
-// src/state/AuthContext.js
+
 import React, { createContext, useReducer, useEffect } from "react";
 import axios from "axios";
 
@@ -7,6 +7,7 @@ export const AuthContext = createContext();
 const initialState = {
   user: null,
   token: null,
+  role: null,
   error: null,
   loading: true,
 };
@@ -19,6 +20,7 @@ function authReducer(state, action) {
         ...state,
         user: action.payload.user,
         token: action.payload.token,
+        role: action.payload.role, 
         error: null,
         loading: false,
       };
@@ -28,11 +30,12 @@ function authReducer(state, action) {
         ...state,
         user: null,
         token: null,
+        role: null,
         error: action.payload,
         loading: false,
       };
     case "LOGOUT":
-      return { user: null, token: null, error: null, loading: false };
+      return { user: null, token: null, role: null, error: null, loading: false };
     case "RESTORE":
       return { ...state, ...action.payload, loading: false };
     default:
@@ -55,6 +58,7 @@ export const AuthProvider = ({ children }) => {
         payload: {
           token,
           user: JSON.parse(userData || vendorData),
+          role: userData ? "user" : "vendor",   
         },
       });
     } else {
@@ -84,7 +88,7 @@ export const AuthProvider = ({ children }) => {
 
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: { user: data.user || data, token },
+        payload: { user: data.user || data, token, role: isVendor ? "vendor" : "user" },
       });
 
       return true;
@@ -120,7 +124,7 @@ export const AuthProvider = ({ children }) => {
 
       dispatch({
         type: "REGISTER_SUCCESS",
-        payload: { user: data.user || data, token },
+        payload: { user: data.user || data, token, role },
       });
 
       return true;
@@ -147,6 +151,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user: state.user,
         token: state.token,
+        role: state.role,   // 👈 expose role
         error: state.error,
         loading: state.loading,
         login,
