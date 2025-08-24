@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import DemandCreateView,UserProfileView,UserLoginView,UserRegisterView
+from .views import DemandCreateView,UserProfileView,UserLoginView,UserRegisterView,test_django_email_settings
 
 urlpatterns = [
     path("demand/create/", DemandCreateView.as_view(), name="create-demand"),
