@@ -269,3 +269,6 @@ class UserProfileView(APIView):
                 {"error": "An error occurred while fetching profile"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+
+

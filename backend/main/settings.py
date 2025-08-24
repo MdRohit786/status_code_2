@@ -13,15 +13,18 @@ https://docs.djangoproject.org/en/5.2/ref/settings/
 from pathlib import Path
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = "bunnyfound405@gmail.com"
-EMAIL_HOST_PASSWORD = "ncaz wfgb dxer atnd"
-DEFAULT_FROM_EMAIL = "bunnyfound405@gmail.com"
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', '')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +43,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '65.20.88.119']
 
 
 # Gemini API Configuration - ADD YOUR API KEY HERE
-GEMINI_API_KEY = "AIzaSyCXEyDB-kXOQUY1s-z1gfK7_38V29FqkoY"  # Replace with your actual Gemini API key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "") # Replace with your actual Gemini API key
 
 
 # Application definition

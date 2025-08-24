@@ -174,6 +174,8 @@ class VendorLoginView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+
+
 class AcceptOrderView(APIView):
     @vendor_login_required
     def post(self, request):
@@ -184,18 +186,30 @@ class AcceptOrderView(APIView):
         
         try:
             demand_id = serializer.validated_data['demand_id']
-            vendor_id = request.vendor_id  # From decorator
+            vendor_id = request.vendor_id
+
+            # DEBUG: Log the start of the process
+            logger.info(f"AcceptOrderView started for demand_id: {demand_id}, vendor_id: {vendor_id}")
 
             if not ObjectId.is_valid(demand_id):
+                logger.warning(f"Invalid demand ID format: {demand_id}")
                 return Response({"error": "Invalid demand ID format"}, status=status.HTTP_400_BAD_REQUEST)
             
             demand = demands_collection.find_one({"_id": ObjectId(demand_id), "status": "pending"})
             if not demand:
+                logger.warning(f"Demand not found or already accepted: {demand_id}")
                 return Response({"error": "Demand not found or already accepted"}, status=status.HTTP_404_NOT_FOUND)
+            
+            # DEBUG: Log the demand object (without sensitive data)
+            logger.info(f"Demand found: {demand_id}, email: {demand.get('email', 'NOT_SET')}")
             
             vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
             if not vendor:
+                logger.warning(f"Vendor not found: {vendor_id}")
                 return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # DEBUG: Log vendor details
+            logger.info(f"Vendor found: {vendor_id}, name: {vendor.get('name', 'Unknown')}")
 
             # Update demand
             update_result = demands_collection.update_one(
@@ -216,6 +230,7 @@ class AcceptOrderView(APIView):
             )
 
             if update_result.modified_count == 0:
+                logger.error(f"Failed to update demand: {demand_id}")
                 return Response({"error": "Failed to accept order"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Update vendor accepted orders
@@ -226,8 +241,8 @@ class AcceptOrderView(APIView):
                         "accepted_orders": {
                             "demand_id": demand_id,
                             "accepted_at": datetime.now(),
-                            "customer_username": demand['username'],
-                            "customer_address": demand['address'],
+                            "customer_name": demand.get('name', 'Customer'),
+                            "customer_address": demand.get('address', ''),
                             "status": "accepted"
                         }
                     },
@@ -237,35 +252,103 @@ class AcceptOrderView(APIView):
             )
 
             # ---- Send Email to Customer ----
-            customer_email = demand.get("email")  # Make sure demand doc has email
+            email_status = "not_sent"
+            email_error = None
+            
+            customer_email = demand.get("email")
+            logger.info(f"Customer email from demand: {customer_email}")
+            
             if customer_email:
-                subject = "Your Order Has Been Accepted"
-                message = f"""
-                Hello {demand['username']},
+                try:
+                    # DEBUG: Detailed email logging
+                    logger.info(f"Attempting to send email to: {customer_email}")
+                    logger.info(f"Using FROM email: {settings.DEFAULT_FROM_EMAIL}")
+                    logger.info(f"EMAIL_HOST_USER from settings: {settings.EMAIL_HOST_USER}")
+                    
+                    # Test email settings first
+                    logger.info("Testing email configuration...")
+                    from django.core.mail import get_connection
+                    connection = get_connection()
+                    connection.open()  # This will raise an exception if configuration is wrong
+                    connection.close()
+                    logger.info("Email connection test passed")
+                    
+                    subject = "Your Order Has Been Accepted!"
+                    message = f"""
+                    Hello {demand.get('name', 'Customer')},
 
-                Your order has been accepted by {vendor.get('business_name', vendor.get('name', 'Vendor'))}.
+                    Great news! Your order has been accepted by {vendor.get('business_name', vendor.get('name', 'a vendor'))}.
 
-                Delivery Address: {demand['address']}
-                Status: Accepted ✅
+                    Order Details:
+                    - Order ID: {demand_id}
+                    - Vendor: {vendor.get('business_name', vendor.get('name', 'Vendor'))}
+                    - Delivery Address: {demand.get('address', '')}
+                    - Status: Accepted ✅
 
-                Thank you for using our service!
-                """
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [customer_email],
-                    fail_silently=False,
-                )
+                    The vendor will contact you shortly for further details.
 
-            return Response(
-                {"message": "Order accepted successfully, email sent", "demand_id": demand_id, "vendor_id": vendor_id, "status": "accepted"},
-                status=status.HTTP_200_OK
-            )
+                    Thank you for using our service!
+
+                    Best regards,
+                    {vendor.get('business_name', 'The Vendor Team')}
+                    """
+                    
+                    # DEBUG: Log email content (truncated for security)
+                    logger.info(f"Email subject: {subject}")
+                    logger.info(f"Email message length: {len(message)} characters")
+                    
+                    # Send email
+                    send_mail(
+                        subject=subject,
+                        message=message,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[customer_email],
+                        fail_silently=False,
+                    )
+                    
+                    email_status = "sent"
+                    logger.info(f"Email successfully sent to {customer_email}")
+                    
+                except Exception as e:
+                    email_status = "failed"
+                    email_error = str(e)
+                    logger.error(f"Failed to send email to {customer_email}: {e}")
+                    logger.error(f"Error type: {type(e).__name__}")
+                    
+                    # Log full email configuration for debugging
+                    logger.error("Email configuration details:")
+                    logger.error(f"EMAIL_BACKEND: {getattr(settings, 'EMAIL_BACKEND', 'Not set')}")
+                    logger.error(f"EMAIL_HOST: {getattr(settings, 'EMAIL_HOST', 'Not set')}")
+                    logger.error(f"EMAIL_PORT: {getattr(settings, 'EMAIL_PORT', 'Not set')}")
+                    logger.error(f"EMAIL_USE_TLS: {getattr(settings, 'EMAIL_USE_TLS', 'Not set')}")
+                    logger.error(f"EMAIL_HOST_USER: {getattr(settings, 'EMAIL_HOST_USER', 'Not set')}")
+                    logger.error(f"DEFAULT_FROM_EMAIL: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'Not set')}")
+                    # Don't log password for security reasons
+
+            else:
+                logger.warning(f"No email found for demand: {demand_id}")
+                email_status = "no_email"
+
+            response_data = {
+                "message": "Order accepted successfully",
+                "demand_id": str(demand_id), 
+                "vendor_id": str(vendor_id), 
+                "status": "accepted",
+                "email_status": email_status
+            }
+            
+            if email_error:
+                response_data["email_error"] = email_error
+            
+            logger.info(f"AcceptOrderView completed successfully for demand: {demand_id}")
+            return Response(response_data, status=status.HTTP_200_OK)
         
         except Exception as e:
-            logger.error(f"Error accepting order: {e}")
-            return Response({"error": "An error occurred while accepting the order"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error in AcceptOrderView: {e}", exc_info=True)
+            return Response(
+                {"error": "An error occurred while accepting the order", "details": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         
 
 
