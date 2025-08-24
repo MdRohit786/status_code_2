@@ -115,7 +115,7 @@ class UserRegisterView(APIView):
             
             # Create user document
             user_doc = {
-                "username": data['username'],
+                "name": data['name'],
                 "email": data['email'],
                 "password": hashed_password,
                 "phone": data['phone'],
@@ -139,7 +139,7 @@ class UserRegisterView(APIView):
                     "message": "User registered successfully",
                     "user_id": str(result.inserted_id),
                     "token": token,
-                    "username": data['username'],
+                    "name": data['name'],
                     "email": data['email']
                 },
                 status=status.HTTP_201_CREATED
@@ -195,7 +195,7 @@ class UserLoginView(APIView):
                     "message": "Login successful",
                     "token": token,
                     "user_id": str(user['_id']),
-                    "username": user['username'],
+                    "name": user['name'],
                     "email": user['email']
                 },
                 status=status.HTTP_200_OK
