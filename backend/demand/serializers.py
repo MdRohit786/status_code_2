@@ -5,6 +5,7 @@ import re
 
 class DemandSerializer(serializers.Serializer):
     name = serializers.CharField(required=True, max_length=100)
+    email = serializers.CharField(required=True, max_length=100)
     address = serializers.CharField(required=True, max_length=255)
     latitude = serializers.FloatField(required=True)
     longitude = serializers.FloatField(required=True)
@@ -37,6 +38,8 @@ class DemandSerializer(serializers.Serializer):
         
         # Create the complete document structure
         demand_doc = {
+            "name": validated_data["name"],
+            "email": validated_data["email"],
             "address": validated_data["address"],
             "location": {
                 "type": "Point",
