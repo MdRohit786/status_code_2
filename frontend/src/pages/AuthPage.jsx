@@ -20,7 +20,6 @@ export default function AuthPage() {
     vehicleType: 'cycle'
   });
 
-  // Mock geolocation since we don't have the hook
   const position = { latitude: 0, longitude: 0 };
 
 useEffect(() => {
@@ -34,7 +33,6 @@ useEffect(() => {
 }, []);
 
 if (isAuthenticated) {
-  // Check role and redirect accordingly
   const vendorData = localStorage.getItem('vendorData');
   if (vendorData) {
     return <Navigate to="/vendor" replace />;

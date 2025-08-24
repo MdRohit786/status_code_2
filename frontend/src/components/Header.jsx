@@ -1,13 +1,15 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation,useNavigate  } from 'react-router-dom';
 import { Map, Home, User, LogOut, Store, ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { useState, } from 'react';
 import NotificationCenter from './NotificationCenter';
 import useAuth from '../hooks/useAuth';
 
 export default function Header() {
   const location = useLocation();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, role, token, logout } = useAuth();  
+  const isAuthenticated = !!token;                 
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const navigate = useNavigate();
 
   const publicNavigation = [
     { name: 'Home', href: '/', icon: Home },
@@ -17,14 +19,11 @@ export default function Header() {
   const getAuthenticatedNavigation = () => {
     if (!isAuthenticated) return publicNavigation;
     
-    const baseNav = [
-      { name: 'Home', href: '/', icon: Home },
-      { name: 'Vendors Map', href: '/map', icon: Map },
-    ];
+    const baseNav = [...publicNavigation];
     
-    if (user?.role === 'vendor') {
+    if (role === 'vendor') {
       baseNav.push({ name: 'Vendor Dashboard', href: '/vendor', icon: Store });
-    } else if (user?.role === 'customer') {
+    } else if (role === 'user') {
       baseNav.push({ name: 'My Orders', href: '/customer', icon: ShoppingCart });
     }
     
@@ -35,6 +34,7 @@ export default function Header() {
 
   const handleLogout = () => {
     logout();
+    navigate('/auth')
     setShowUserMenu(false);
   };
 
@@ -75,10 +75,8 @@ export default function Header() {
 
           {/* Right side - Auth & Notifications */}
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
             <NotificationCenter />
 
-            {/* Auth Section */}
             {isAuthenticated ? (
               <div className="relative">
                 <button
@@ -86,7 +84,7 @@ export default function Header() {
                   className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
                 >
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    {user?.role === 'vendor' ? (
+                    {role === 'vendor' ? (
                       <Store className="w-4 h-4 text-blue-600" />
                     ) : (
                       <User className="w-4 h-4 text-blue-600" />
@@ -97,7 +95,6 @@ export default function Header() {
                   </span>
                 </button>
 
-                {/* User Dropdown */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border">
                     <div className="px-4 py-2 border-b">
@@ -105,12 +102,12 @@ export default function Header() {
                         {user?.storeName || user?.name}
                       </p>
                       <p className="text-xs text-gray-500 capitalize">
-                        {user?.role} Account
+                        {role} Account
                       </p>
                     </div>
                     
                     <Link
-                      to={user?.role === 'vendor' ? '/vendor' : '/customer'}
+                      to={role === 'vendor' ? '/vendor' : '/customer'}
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                       onClick={() => setShowUserMenu(false)}
                     >
@@ -172,7 +169,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Click outside to close user menu */}
       {showUserMenu && (
         <div
           className="fixed inset-0 z-40"

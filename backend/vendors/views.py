@@ -43,6 +43,7 @@ class VendorNearestOrdersView(APIView):
                     "address": d["address"],
                     "latitude": d["location"]["coordinates"][1],
                     "longitude": d["location"]["coordinates"][0],
+                    "status": d["status"],
                     "text": d.get("text", ""),
                     "tags": d.get("tags", []),
                     "distance_meters": round(d["distance"], 2)
