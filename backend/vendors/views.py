@@ -9,6 +9,8 @@ import logging
 from .decorators import vendor_login_required
 from utils.auth_helper import hash_password, verify_password, generate_jwt_token
 from utils.geo_helper import is_within_radius,calculate_distance  
+from django.core.mail import send_mail
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -183,35 +185,19 @@ class AcceptOrderView(APIView):
         try:
             demand_id = serializer.validated_data['demand_id']
             vendor_id = request.vendor_id  # From decorator
-            
-            # Validate ObjectId format
+
             if not ObjectId.is_valid(demand_id):
-                return Response(
-                    {"error": "Invalid demand ID format"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                return Response({"error": "Invalid demand ID format"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # Check if demand exists and is pending
-            demand = demands_collection.find_one({
-                "_id": ObjectId(demand_id),
-                "status": "pending"
-            })
-            
+            demand = demands_collection.find_one({"_id": ObjectId(demand_id), "status": "pending"})
             if not demand:
-                return Response(
-                    {"error": "Demand not found or already accepted"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+                return Response({"error": "Demand not found or already accepted"}, status=status.HTTP_404_NOT_FOUND)
             
-            # Get vendor details
             vendor = vendors_collection.find_one({"_id": ObjectId(vendor_id)})
             if not vendor:
-                return Response(
-                    {"error": "Vendor not found"},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            
-            # Update the demand status and add vendor info
+                return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Update demand
             update_result = demands_collection.update_one(
                 {"_id": ObjectId(demand_id)},
                 {
@@ -228,15 +214,12 @@ class AcceptOrderView(APIView):
                     }
                 }
             )
-            
+
             if update_result.modified_count == 0:
-                return Response(
-                    {"error": "Failed to accept order"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-            
-            # Add the order to vendor's accepted_orders array
-            vendor_update = vendors_collection.update_one(
+                return Response({"error": "Failed to accept order"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            # Update vendor accepted orders
+            vendors_collection.update_one(
                 {"_id": ObjectId(vendor_id)},
                 {
                     "$push": {
@@ -252,23 +235,37 @@ class AcceptOrderView(APIView):
                     "$set": {"updated_at": datetime.now()}
                 }
             )
-            
+
+            # ---- Send Email to Customer ----
+            customer_email = demand.get("email")  # Make sure demand doc has email
+            if customer_email:
+                subject = "Your Order Has Been Accepted"
+                message = f"""
+                Hello {demand['username']},
+
+                Your order has been accepted by {vendor.get('business_name', vendor.get('name', 'Vendor'))}.
+
+                Delivery Address: {demand['address']}
+                Status: Accepted ✅
+
+                Thank you for using our service!
+                """
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [customer_email],
+                    fail_silently=False,
+                )
+
             return Response(
-                {
-                    "message": "Order accepted successfully",
-                    "demand_id": demand_id,
-                    "vendor_id": vendor_id,
-                    "status": "accepted"
-                },
+                {"message": "Order accepted successfully, email sent", "demand_id": demand_id, "vendor_id": vendor_id, "status": "accepted"},
                 status=status.HTTP_200_OK
             )
-            
+        
         except Exception as e:
             logger.error(f"Error accepting order: {e}")
-            return Response(
-                {"error": "An error occurred while accepting the order"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response({"error": "An error occurred while accepting the order"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
 
